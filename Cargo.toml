@@ -1,0 +1,8 @@
+[package]
+name = "ntrace"
+version = "0.1.0"
+authors = ["Anton Vasiljev <antono.vasiljev@gmail.com>"]
+
+[dependencies]
+pcap = { version = "0.7", features = ["tokio"] }
+clap = "~2.30"

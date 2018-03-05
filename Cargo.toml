@@ -6,3 +6,4 @@ authors = ["Anton Vasiljev <antono.vasiljev@gmail.com>"]
 [dependencies]
 pcap = { version = "0.7", features = ["tokio"] }
 clap = "~2.30"
+rshark = "0.0.1"

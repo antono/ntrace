@@ -1,9 +1,10 @@
 #[macro_use]
 extern crate clap;
 extern crate pcap;
+extern crate rshark;
 
 use clap::{App, Arg};
-use pcap::{Device, Capture};
+use pcap::{Device, Capture, Packet};
 use std::ops::{Range};
 
 fn main() {
@@ -48,7 +49,7 @@ fn main() {
     let main_device = Device::lookup().unwrap();
     println!("Capturing on device: {:?}", main_device);
 
-    let mut cap = Capture::from_device(main_device)
+    let mut capture = Capture::from_device(main_device)
         .unwrap()
         .promisc(true)
         .snaplen(5000)
@@ -59,21 +60,29 @@ fn main() {
     if count == 0 {
         println!("Capturing unlimited packets");
         loop {
-            while let Ok(packet) = cap.next() {
+            while let Ok(packet) = capture.next() {
                 println!("{:?}", packet);
+                display_packet(packet);
             }
         }
     } else {
         println!("Capturing {} packets", count);
         let range = Range { start: 0, end: count };
         for _ in range {
-            match cap.next() {
-                Ok(packet) => println!("{:?}", packet),
+            match capture.next() {
+                Ok(packet) => display_packet(packet),
                 Err(_) => println!("Cannot capture next packet")
             }
         }
     }
 
-    let stats = cap.stats().unwrap();
+    let stats = capture.stats().unwrap();
     println!("Received: {}, dropped: {}, if_dropped: {}", stats.received, stats.dropped, stats.if_dropped);
+}
+
+fn display_packet(packet: Packet) {
+    match rshark::ethernet::dissect(&packet.data) {
+        Err(e) => println!["Error: {}", e],
+        Ok(val) => print!["{}", val.pretty_print(0)],
+    }
 }

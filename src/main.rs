@@ -46,22 +46,35 @@ fn main() {
 
     println!("Tracing PID: {}", pid);
 
-    let main_device = Device::lookup().unwrap();
-    println!("Capturing on device: {:?}", main_device);
+    let capture = start_capture().unwrap();
 
-    let mut capture = Capture::from_device(main_device)
-        .unwrap()
+    print_packets(capture, count);
+
+    // let stats = capture.stats().unwrap();
+    // println!(
+    //     "Received: {}, dropped: {}, if_dropped: {}",
+    //     stats.received, stats.dropped, stats.if_dropped
+    // );
+}
+
+fn start_capture() -> Result<Capture<pcap::Active>, pcap::Error> {
+    let device = Device::lookup().unwrap();
+    println!("Capturing on device: {:?}", device);
+
+    let cap = Capture::from_device(device);
+
+    cap.unwrap()
         .promisc(true)
         .snaplen(5000)
         .timeout(10000)
         .open()
-        .unwrap();
+}
 
+fn print_packets(mut capture: Capture<pcap::Active>, count: u8) {
     if count == 0 {
         println!("Capturing unlimited packets");
         loop {
             while let Ok(packet) = capture.next() {
-                println!("{:?}", packet);
                 display_packet(packet);
             }
         }
@@ -79,16 +92,12 @@ fn main() {
         }
     }
 
-    let stats = capture.stats().unwrap();
-    println!(
-        "Received: {}, dropped: {}, if_dropped: {}",
-        stats.received, stats.dropped, stats.if_dropped
-    );
 }
 
 fn display_packet(packet: Packet) {
+    // println!("{}", packet.data.iter().fold(String::new(), |acc, &num| acc + &num.to_string()));
     match rshark::ethernet::dissect(&packet.data) {
-        Err(e) => println!["Error: {}", e],
-        Ok(val) => print!["{}", val.pretty_print(0)],
+        Err(e) => println!("Error: {}", e),
+        Ok(val) => print!("{}", val.pretty_print(0)),
     }
 }

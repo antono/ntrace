@@ -46,15 +46,15 @@ fn main() {
 
     println!("Tracing PID: {}", pid);
 
-    let capture = start_capture().unwrap();
+    let mut capture = start_capture().unwrap();
 
-    print_packets(capture, count);
+    print_packets(&mut capture, count);
 
-    // let stats = capture.stats().unwrap();
-    // println!(
-    //     "Received: {}, dropped: {}, if_dropped: {}",
-    //     stats.received, stats.dropped, stats.if_dropped
-    // );
+    let stats = capture.stats().unwrap();
+    println!(
+        "Received: {}, dropped: {}, if_dropped: {}",
+        stats.received, stats.dropped, stats.if_dropped
+    );
 }
 
 fn start_capture() -> Result<Capture<pcap::Active>, pcap::Error> {
@@ -70,11 +70,11 @@ fn start_capture() -> Result<Capture<pcap::Active>, pcap::Error> {
         .open()
 }
 
-fn print_packets(mut capture: Capture<pcap::Active>, count: u8) {
+fn print_packets(capture: &mut Capture<pcap::Active>, count: u8) {
     if count == 0 {
         println!("Capturing unlimited packets");
         loop {
-            while let Ok(packet) = capture.next() {
+            while let Ok(packet) = (*capture).next() {
                 display_packet(packet);
             }
         }
@@ -85,17 +85,15 @@ fn print_packets(mut capture: Capture<pcap::Active>, count: u8) {
             end: count,
         };
         for _ in range {
-            match capture.next() {
+            match (*capture).next() {
                 Ok(packet) => display_packet(packet),
                 Err(_) => println!("Cannot capture next packet"),
             }
         }
     }
-
 }
 
 fn display_packet(packet: Packet) {
-    // println!("{}", packet.data.iter().fold(String::new(), |acc, &num| acc + &num.to_string()));
     match rshark::ethernet::dissect(&packet.data) {
         Err(e) => println!("Error: {}", e),
         Ok(val) => print!("{}", val.pretty_print(0)),
